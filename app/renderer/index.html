@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https: ws: wss:" />
+<title>Orion</title>
+<!--
+  Orion — macOS çentiğinde yaşayan asistan. Renderer katmanları:
+
+    [2] .avatar-layer  → karakter, kendi bandında yaşar (hero)
+    [1] .panel-ui      → başlık, sohbet, composer, sidebar, ayarlar
+    [1] .glass         → cam katmanı (tint + rim), zeminin ÜSTÜNDE
+    [0] .window        → pencere kabuğu + çentik omuzları
+
+  Katman sırası ve IPC isimleri dondurulmuştur. Tasarım kararları
+  docs/superpowers/specs/2026-11-15-orion-ui-redesign-design.md'de;
+  tüm renk/süre/boşluk değerleri styles/tokens.css'ten gelir.
+-->
+<link rel="stylesheet" href="./styles/tokens.css" />
+<link rel="stylesheet" href="./styles/base.css" />
+<link rel="stylesheet" href="./styles/components.css" />
+</head>
+<body class="closed">
+
+<div class="window">
+  <div class="sky" id="sky" aria-hidden="true"></div>
+  <div class="glass" aria-hidden="true"></div>
+  <div class="ambient"><i></i><i></i><i></i></div>
+
+  <!-- ── KAPALI: hap ── -->
+  <div class="pill-ui" id="pill" role="button" tabindex="0" aria-label="Asistanı aç">
+    <span class="pill-mark" data-orion-mark="22"></span>
+    <span class="pill-status" id="pillStatus">Hazır</span>
+    <span class="pill-dot" id="pillDot"></span>
+  </div>
+
+  <!-- ── AÇIK: panel ── -->
+  <div class="panel-ui">
+    <aside class="sidebar" id="sidebar" aria-label="Sohbet geçmişi">
+      <div class="hist-head"><span>Sohbetler</span><button id="btnHistNew" title="Yeni sohbet">Yeni</button></div>
+      <div class="hist-list" id="histList"></div>
+    </aside>
+
+    <section class="main">
+      <!-- başlık = kimlik satırı: hamburger · avatar/ad/durum · ayarlar/kapat -->
+      <header class="head" id="head">
+        <button class="icon-btn" id="btnHistory" aria-label="Sohbet geçmişi" title="Sohbetler">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M2 4.5h12M2 8h12M2 11.5h12"/>
+          </svg>
+        </button>
+
+        <div class="ident">
+          <!-- boş durumda canlı avatar serbest kalır: başlıkta statik mark görünür -->
+          <span class="mark-fallback" data-orion-mark="46" aria-hidden="true"></span>
+          <div class="hero" id="hero">
+            <div class="avatar-slot" id="avatarSlot"></div>
+            <div class="id">
+              <div class="name">Orion</div>
+              <div class="sub">
+                <span class="dot" id="headDot"></span>
+                <span id="statusText">hazır</span>
+                <span class="sep" aria-hidden="true">·</span>
+                <span id="statusProvider">Groq</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <span class="spacer"></span>
+
+        <button class="icon-btn" id="btnSettings" aria-label="Ayarlar" title="Ayarlar">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <circle cx="8" cy="8" r="2.4"/>
+            <path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="btnClose" aria-label="Kapat" title="Kapat (Esc)">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M4 4l8 8M12 4l-8 8"/>
+          </svg>
+        </button>
+      </header>
+
+      <div class="stage" id="stage">
+        <div class="chat" id="chat" role="log" aria-live="polite"></div>
+
+        <!-- boş durum: davet, öneri çipleri -->
+        <div class="empty" id="empty">
+          <h2>Merhaba, ben Orion</h2>
+          <p class="lede">Ne üzerinde çalışıyoruz?</p>
+          <div class="chips">
+            <button class="chip" type="button" data-text="Şu hatayı çöz: ">Bir hatayı çöz</button>
+            <button class="chip" type="button" data-text="Bunu özetle: ">Metni özetle</button>
+            <button class="chip" type="button" data-text="Şunu kodla: ">Kod yaz</button>
+          </div>
+        </div>
+      </div>
+
+      <form class="composer" id="composer" autocomplete="off">
+        <!-- @beceri seçicisi: yazarken açılır, seçilen becerinin tam metni mesaja eklenir -->
+        <div class="mention" id="mention" hidden role="listbox" aria-label="Beceri seç"></div>
+        <input id="input" placeholder="Bir şey sor…  ·  @beceri ile çağır" aria-label="Mesaj" autocomplete="off" spellcheck="false"/>
+        <button class="send" id="btnSend" type="submit" aria-label="Gönder" title="Gönder (Enter)">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M3 8h9.5M8.5 3.8L13 8l-4.5 4.2"/>
+          </svg>
+        </button>
+      </form>
+    </section>
+
+    <!-- ══ [2] AVATAR KATMANI — cam yok, kendi bandında; içeriğin üstünde ══ -->
+    <div class="avatar-layer" id="avatarLayer">
+      <div class="avatar-drag" id="avatarDrag" data-ring="idle" data-mode="empty" role="img"
+           aria-label="Orion">
+        <div class="orb-scale">
+          <div class="orb-clip"><div id="avatar"></div></div>
+          <div class="ring" aria-hidden="true"></div>
+        </div>
+      </div>
+      <!-- boş durumda karakterin adı: avatarın hemen üstünde -->
+      <div class="free-name" id="freeName" aria-hidden="true">Orion</div>
+    </div>
+  </div>
+
+  <!-- ── AYARLAR — "Orion Rayı" hibriti ──
+       Sol ray: Orion (bento profil) + dört kategori. Sağda macOS satır grupları.
+       Tüm alanlar DOM'da kalır (app.js ID'lerle çalışır); yalnız görünürlük değişir. -->
+  <div class="settings" id="settings" data-pane="orion">
+    <div class="settings-shell">
+
+      <aside class="rail" id="settingsNav" role="tablist" aria-label="Ayarlar bölümleri" aria-orientation="vertical">
+        <button class="rail-item rail-orion" id="railOrion" type="button"
+                role="tab" data-target="orion" aria-selected="true" aria-controls="pane-orion" tabindex="0">
+          <span class="rail-mark" data-orion-mark="26" aria-hidden="true"></span>
+          <span class="rail-label">Orion</span>
+        </button>
+
+        <div class="rail-list">
+          <button class="rail-item" type="button" role="tab" data-target="conn" aria-selected="false" aria-controls="pane-conn" tabindex="-1">
+            <span class="rail-icon" style="--icon:var(--cat-conn)" aria-hidden="true">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                <path d="M6.5 9.5a3 3 0 0 0 4.2.2l1.6-1.6a3 3 0 0 0-4.2-4.2l-.9.9"/>
+                <path d="M9.5 6.5a3 3 0 0 0-4.2-.2L3.7 7.9a3 3 0 0 0 4.2 4.2l.9-.9"/>
+              </svg>
+            </span>
+            <span class="rail-label">Bağlantı</span>
+          </button>
+
+          <button class="rail-item" type="button" role="tab" data-target="models" aria-selected="false" aria-controls="pane-models" tabindex="-1">
+            <span class="rail-icon" style="--icon:var(--cat-models)" aria-hidden="true">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                <rect x="4.5" y="4.5" width="7" height="7" rx="1.6"/>
+                <path d="M6.5 1.8v2.2M9.5 1.8v2.2M6.5 12v2.2M9.5 12v2.2M1.8 6.5H4M1.8 9.5H4M12 6.5h2.2M12 9.5h2.2"/>
+              </svg>
+            </span>
+            <span class="rail-label">Modeller</span>
+          </button>
+
+          <button class="rail-item" type="button" role="tab" data-target="tools" aria-selected="false" aria-controls="pane-tools" tabindex="-1">
+            <span class="rail-icon" style="--icon:var(--cat-tools)" aria-hidden="true">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                <path d="M10.2 2.6a3.4 3.4 0 0 0-4.3 4.3l-3.3 3.3v2.2h2.2l3.3-3.3a3.4 3.4 0 0 0 4.3-4.3l-1.9 1.9-1.9-.6-.6-1.9 2.2-1.6Z"/>
+              </svg>
+            </span>
+            <span class="rail-label">Araçlar</span>
+          </button>
+
+          <button class="rail-item" type="button" role="tab" data-target="memory" aria-selected="false" aria-controls="pane-memory" tabindex="-1">
+            <span class="rail-icon" style="--icon:var(--cat-memory)" aria-hidden="true">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                <path d="M6 2.4a2 2 0 0 0-2 2 2 2 0 0 0-1.2 3.3A2 2 0 0 0 4 11.4a2 2 0 0 0 2 2.2V2.4Z"/>
+                <path d="M10 2.4a2 2 0 0 1 2 2 2 2 0 0 1 1.2 3.3A2 2 0 0 1 12 11.4a2 2 0 0 1-2 2.2V2.4Z"/>
+              </svg>
+            </span>
+            <span class="rail-label">Hafıza</span>
+          </button>
+        </div>
+      </aside>
+
+      <div class="settings-pane">
+        <header class="settings-head">
+          <button class="icon-btn" id="btnBack" aria-label="Geri">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>
+          </button>
+          <div class="name" id="settingsTitle" role="button" tabindex="0" title="Sohbete dön">Ayarlar</div>
+        </header>
+
+        <div class="settings-body">
+
+          <!-- ── Orion: bento profil ── -->
+          <div class="pane active" id="pane-orion" data-pane="orion" role="tabpanel">
+            <section class="bento-hero">
+              <span class="bento-mark" data-orion-mark="52" aria-hidden="true"></span>
+              <div class="bento-id">
+                <div class="bento-name">Orion <span class="dot ok" id="bentoDot"></span></div>
+                <div class="bento-sub" id="bentoSub">bağlı · Groq</div>
+              </div>
+            </section>
+
+            <div class="bento">
+              <button class="tile wide" type="button" data-goto="models">
+                <span class="tile-label">Sağlayıcı</span>
+                <span class="tile-value" id="bentoProvider">Groq</span>
+                <span class="tile-link">değiştir ⌄</span>
+              </button>
+              <div class="tile">
+                <span class="tile-label">Bu oturum</span>
+                <span class="tile-value" id="bentoSession">—</span>
+              </div>
+              <button class="tile" type="button" data-goto="tools">
+                <span class="tile-label">Araçlar</span>
+                <span class="tile-value" id="bentoTools">kapalı</span>
+              </button>
+              <button class="tile wide" type="button" data-goto="memory">
+                <span class="tile-label">Hafıza</span>
+                <span class="tile-value" id="bentoMemory">—</span>
+              </button>
+              <button class="tile wide" type="button" data-goto="models">
+                <span class="tile-label">Sağlayıcı anahtarı</span>
+                <span class="tile-value" id="bentoKey">yok</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- ── Bağlantı ── -->
+          <div class="pane" id="pane-conn" data-pane="conn" role="tabpanel">
+            <section class="group">
+              <div class="group-head"><h3>OpenClaw</h3><span class="group-tag">isteğe bağlı</span></div>
+              <p class="group-sub">Sohbetler Groq/Zen ile çalışır; bu adres yalnızca OpenClaw köprüsü içindir.</p>
+              <div class="field">
+                <label for="gw">Adres</label>
+                <input id="gw" value="ws://127.0.0.1:18789/" spellcheck="false"/>
+                <div class="hint">WebSocket adresi.</div>
+              </div>
+              <div class="field">
+                <label for="token">Token</label>
+                <input id="token" type="password" spellcheck="false"/>
+                <div class="hint">Yalnızca bu Mac'te, şifreli saklanır.</div>
+              </div>
+              <div class="conn" id="conn"><span class="led"></span><span id="connText">Bağlantı bekleniyor…</span></div>
+            </section>
+          </div>
+
+          <!-- ── Modeller ── -->
+          <div class="pane" id="pane-models" data-pane="models" role="tabpanel">
+            <section class="group">
+              <div class="group-head"><h3>Sağlayıcı</h3></div>
+              <div class="field">
+                <label for="provider">Sohbeti yanıtlayan</label>
+                <select id="provider">
+                  <option value="zen">Opencode Zen</option>
+                  <option value="groq">Groq</option>
+                </select>
+              </div>
+            </section>
+
+            <section class="group">
+              <div class="group-head"><h3>Groq</h3></div>
+              <div class="field">
+                <label for="groqKey">Anahtar</label>
+                <input id="groqKey" type="password" spellcheck="false"/>
+                <div class="hint">console.groq.com · şifreli saklanır. Araçlar ve hafıza öğrenmesi bu yolda çalışır.</div>
+              </div>
+              <div class="field">
+                <label>Model</label>
+                <div class="model-list" id="groqModels"><div class="model-empty">Modeller yükleniyor…</div></div>
+                <div class="refresh-row">
+                  <button class="mini" id="btnGroqRefresh" type="button">Listeyi yenile</button>
+                  <span class="note" id="groqNote"></span>
+                </div>
+              </div>
+            </section>
+
+            <section class="group">
+              <div class="group-head"><h3>Opencode Zen</h3></div>
+              <p class="group-sub">Ücretsiz Zen modelleri API anahtarıyla yanıt vermiyor (yalnızca OpenCode uygulamasında). Sohbet ve araçlar için Groq önerilir.</p>
+              <div class="field">
+                <label for="ocKey">Anahtar</label>
+                <input id="ocKey" type="password" spellcheck="false"/>
+                <div class="hint">Opencode panelinden alınan anahtar; sohbete yapıştırma.</div>
+              </div>
+              <div class="field">
+                <label>Model</label>
+                <div class="model-list" id="ocModels"><div class="model-empty">Ücretsiz modeller yükleniyor…</div></div>
+              </div>
+            </section>
+
+            <section class="group">
+              <div class="group-head"><h3>OpenClaw</h3></div>
+              <div class="field">
+                <label>Model</label>
+                <div class="model-list" id="models">
+                  <div class="model-empty">Model listesi bağlantıdan sonra yüklenir.</div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- ── Araçlar ── -->
+          <div class="pane" id="pane-tools" data-pane="tools" role="tabpanel">
+            <section class="group">
+              <div class="group-head"><h3>Araçlar</h3><span class="tok-pill" id="toolsTokens"></span></div>
+              <p class="group-sub">Yalnızca Groq yolunda etkin. Anahtarlar ve anahtarlar anında kaydedilir.</p>
+              <div class="tool-card">
+                <div class="tool-head">
+                  <button class="squish-switch" id="tgContext7" role="switch" aria-checked="false" aria-label="Context7"></button>
+                  <div><b>Context7</b><div class="hint">Güncel kütüphane dokümanları.</div></div>
+                  <span class="tool-state" id="ctx7State"></span>
+                </div>
+                <input id="ctx7Key" type="password" placeholder="Context7 API anahtarı" spellcheck="false"/>
+                <div class="refresh-row">
+                  <button class="mini" id="btnCtx7Test" type="button">Bağlantıyı test et</button>
+                  <span class="note" id="ctx7Note"></span>
+                </div>
+              </div>
+              <div class="tool-card">
+                <div class="tool-head">
+                  <button class="squish-switch" id="tgGraphify" role="switch" aria-checked="false" aria-label="Graphify"></button>
+                  <div><b>Graphify</b><div class="hint">Yerel kod grafında sembol ara.</div></div>
+                  <span class="tool-state" id="graphState"></span>
+                </div>
+                <input id="graphPath" placeholder="Graf dosyası: …/graphify-out/graph.json" spellcheck="false"/>
+              </div>
+            </section>
+
+            <section class="group">
+              <div class="group-head"><h3>Beceriler</h3><span class="group-tag" id="skillsSources"></span></div>
+              <p class="group-sub">Besteciye <b>@</b> yazıp beceri seç: tam metni yalnızca o mesaja eklenir.</p>
+              <div class="tool-card">
+                <div class="tool-head">
+                  <button class="squish-switch" id="tgSkills" role="switch" aria-checked="true" aria-label="Beceriler"></button>
+                  <div><b>Superpowers</b><div class="hint" id="skillsHint">Dizin yükleniyor…</div></div>
+                </div>
+                <div class="skill-list" id="skillList"></div>
+                <div class="skill-actions">
+                  <button class="mini" id="btnSkillDir" type="button">Klasör seç</button>
+                  <button class="mini" id="btnSkillAdd" type="button">SKILL.md ekle</button>
+                </div>
+                <div class="skill-path" id="skillsDir"></div>
+                <div class="skill-import" id="skillImport" hidden>
+                  <input id="skillName" placeholder="beceri-adi" spellcheck="false"/>
+                  <textarea id="skillText" rows="6" placeholder="---&#10;name: beceri-adi&#10;description: Kısa açıklama&#10;---&#10;&#10;# Başlık&#10;Talimatlar…"></textarea>
+                  <div class="refresh-row">
+                    <button class="mini" id="btnSkillSave" type="button">Ekle</button>
+                    <span class="note" id="skillNote"></span>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- ── Hafıza ── -->
+          <div class="pane" id="pane-memory" data-pane="memory" role="tabpanel">
+            <section class="group">
+              <div class="group-head"><h3>Kişisel hafıza</h3><span class="group-tag">her sohbette</span></div>
+              <p class="group-sub">Orion bunları hatırlar. Boş alanlar modele gönderilmez.</p>
+              <div class="field"><label for="pf_name">Ad</label><input id="pf_name" spellcheck="false"/></div>
+              <div class="field"><label for="pf_age">Yaş</label><input id="pf_age" spellcheck="false"/></div>
+              <div class="field"><label for="pf_location">Yer</label><input id="pf_location" spellcheck="false"/></div>
+              <div class="field"><label for="pf_hobbies">Hobiler</label><input id="pf_hobbies" spellcheck="false"/></div>
+              <div class="field"><label for="pf_interests">İlgi alanları</label><textarea id="pf_interests" rows="2"></textarea></div>
+              <div class="field"><label for="pf_habits">Alışkanlıklar / sık hatalar</label><textarea id="pf_habits" rows="2"></textarea></div>
+              <div class="field"><label for="pf_notes">Notlar</label><textarea id="pf_notes" rows="3"></textarea></div>
+              <div class="refresh-row">
+                <span class="note" id="pfMeta"></span>
+                <button class="mini" id="btnPfClear" type="button">Temizle</button>
+              </div>
+            </section>
+
+            <section class="group">
+              <div class="group-head"><h3>Bekleyen öneriler</h3><span class="tok-pill" id="pfPendingCount"></span></div>
+              <p class="group-sub">Orion sohbetten öğrendiklerini önerir; sen onaylamadan profile yazılmaz.</p>
+              <div class="pending-list" id="pfPending"></div>
+            </section>
+          </div>
+        </div>
+
+        <!-- yapışkan durum çubuğu: hiçbir içerik altından geçmez -->
+        <footer class="settings-foot" id="settingsFoot">
+          <span class="foot-state" id="footState">✓ Kaydedildi</span>
+          <div class="foot-actions">
+            <button class="btn ghost" id="btnRevert" type="button" disabled>Geri al</button>
+            <button class="btn primary" id="btnSave" type="button" disabled>Kaydet</button>
+          </div>
+        </footer>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="./js/app.js"></script>
+<script type="module" src="./js/settings-nav.js"></script>
+<script type="module" src="./js/sky.js"></script>
+<script type="module" src="./js/avatar-cursor.js"></script>
+</body>
+</html>

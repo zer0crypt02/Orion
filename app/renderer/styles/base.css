@@ -1,0 +1,267 @@
+/* ── base: reset · cam kabuk · iskelet · odak · erişilebilirlik ────────
+   Kabuk (vibrancy, rim, çentik omuzları) korunur.
+   YENİ: hero bandı (avatarın evi) + platform-öncelikli tipografi.
+   Sadece iskelet burada; görsel detay components.css'te, değerler
+   tokens.css'te (ham renk/süre yasak). */
+
+*{ box-sizing:border-box; margin:0 }
+*{ scrollbar-width:none !important; -ms-overflow-style:none }
+*::-webkit-scrollbar{ display:none !important; width:0 !important; height:0 !important }
+html,body{ height:100%; background:transparent }
+body{
+  font-family:var(--font);
+  font-size:var(--fs-body);
+  color:var(--ink-mid);
+  overflow:hidden; user-select:none; cursor:default;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+/* ── pencere kabuğu ── */
+.window{
+  position:absolute; inset:0;
+  display:flex; flex-direction:column;
+  /* Aydınlık vibrancy: duvar kağıdının üstünde gerçek cam.
+     Pencere zaten transparent + vibrancy → backdrop-filter yalnız tint/blur ekler. */
+  background-color:var(--glass);
+  -webkit-backdrop-filter:var(--glass-blur);
+  backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-rim);
+  box-shadow:var(--glass-shadow);
+  overflow:hidden;
+  border-radius:0 0 var(--r-xl) var(--r-xl);
+}
+/* üst kenar: ışığın cam malzemeye çarptığı 1px */
+.window::before{
+  content:""; position:absolute; inset:0 0 auto 0; height:1px; z-index:9;
+  background:linear-gradient(to bottom, rgb(255 255 255 / .9) 0, transparent 100%);
+  pointer-events:none;
+}
+/* çentik omzu */
+.window::after{
+  content:""; position:absolute; top:-1px; left:-10px; width:20px; height:20px; z-index:8;
+  background:radial-gradient(circle at 100% 0, transparent 58%, rgb(var(--glass-tint) / .96) 60%);
+  pointer-events:none;
+}
+
+/* ── KATMAN [0a]: zemin — ASCII gradient, blur'lu ──
+   Canvas'ın kendisi blur'lanır: cam bulanıklığı tek geçiş, backdrop-filter
+   canlı canvas üstünde her karede yeniden hesaplanmaz (pil).
+   Canvas taşır (--sky-bleed): blur kenarlarda boşluk bırakmaz. */
+/* ZEMİN: duvar kağıdı görünür — ASCII gradient katmanı devre dışı.
+   (Tasarım dokümanı: eski "gece gökyüzü" yönü terk edildi.) */
+.sky{
+  position:absolute; inset:0; z-index:0; overflow:hidden;
+  border-radius:inherit; pointer-events:none;
+  opacity:0;
+  display:none;
+  transition:opacity var(--dur-base) ease;
+}
+.sky-canvas{
+  position:absolute; inset:calc(var(--sky-bleed) * -1);
+  width:calc(100% + var(--sky-bleed) * 2);
+  height:calc(100% + var(--sky-bleed) * 2);
+  display:block;
+  filter:blur(var(--sky-blur)) saturate(var(--sky-saturate));
+}
+body.closed .sky{ opacity:0 }
+
+/* ── KATMAN [1a]: cam — zeminin ÜSTÜNDE ince tint + üst kenar ışığı ──
+   Frost yüksek tutulur: ASCII'nin parlak bölgesi metnin arkasına düşse bile
+   kontrast 4.5:1 altına inmez. */
+.glass{
+  position:absolute; inset:0; z-index:1; pointer-events:none;
+  border-radius:inherit;
+  background-color:rgb(var(--glass-tint) / var(--glass-frost));
+  box-shadow:inset 0 1px 0 var(--rim-top);
+}
+
+/* ASCII zemin varken eski ambient ışıkları kapanır (tek ışık kaynağı) */
+body.has-sky .ambient{ display:none }
+
+/* ── ambient: gece gökyüzü katmanları (dekorasyon değil, atmosfer) ── */
+.ambient{ display:none; position:absolute; inset:0; z-index:0; pointer-events:none; overflow:hidden; border-radius:inherit }
+.ambient i{ position:absolute; inset:-20%; filter:blur(34px); will-change:transform, opacity }
+.ambient i:first-child{
+  background:radial-gradient(42% 50% at 18% 0%, rgb(96 118 196 / .22), transparent 70%);
+  animation:orbitA 26s var(--ease-in-out) infinite;
+}
+.ambient i:nth-child(2){
+  background:radial-gradient(46% 54% at 86% 96%, rgb(126 104 190 / .16), transparent 70%);
+  animation:orbitB 26s var(--ease-in-out) infinite;
+}
+/* üçüncü katman: yıldız ışığı — tek sıcak nokta */
+.ambient i:nth-child(3){
+  background:radial-gradient(30% 30% at 34% 22%, var(--star-glow), transparent 70%);
+  animation:orbitC 20s var(--ease-in-out) infinite;
+}
+@keyframes orbitA{
+  0%{ opacity:.7; transform:translate3d(-7%, -4%, 0) scale(1) }
+  40%{ opacity:1; transform:translate3d(5%, 6%, 0) scale(1.14) }
+  70%{ opacity:.85; transform:translate3d(12%, 10%, 0) scale(1.06) }
+  100%{ opacity:.7; transform:translate3d(-7%, -4%, 0) scale(1) }
+}
+@keyframes orbitB{
+  0%{ opacity:.75; transform:translate3d(7%, 5%, 0) scale(1.04) }
+  45%{ opacity:.95; transform:translate3d(-5%, -5%, 0) scale(1.12) }
+  80%{ opacity:.65; transform:translate3d(-12%, -8%, 0) scale(1) }
+  100%{ opacity:.75; transform:translate3d(7%, 5%, 0) scale(1.04) }
+}
+@keyframes orbitC{
+  0%{ opacity:.5; transform:translate3d(0, 3%, 0) scale(.94) }
+  50%{ opacity:1; transform:translate3d(2%, -2%, 0) scale(1.08) }
+  100%{ opacity:.5; transform:translate3d(0, 3%, 0) scale(.94) }
+}
+
+/* ── katman sırası ── */
+.panel-ui, .pill-ui{ position:absolute; inset:0; z-index:2 }
+.avatar-layer{ z-index:6 }
+.settings{ z-index:20 }
+
+/* ── kapalı: hap ── */
+body.closed .panel-ui{ opacity:0; pointer-events:none; transition:opacity var(--dur-quick) ease }
+body.closed .pill-ui{ opacity:1; transition:opacity var(--dur-base) ease var(--dur-quick) }
+/* kapalı hap: koyu metal (aydınlık camın üstünde kontrast çapası) */
+body.closed .window{
+  border-radius:0 0 18px 18px;
+  background-color:rgb(8 9 14 / .92);
+  -webkit-backdrop-filter:blur(20px) saturate(140%);
+  backdrop-filter:blur(20px) saturate(140%);
+  border-color:rgb(255 255 255 / .08);
+  box-shadow:0 12px 30px rgb(0 0 0 / .4);
+}
+.pill-ui{
+  display:flex; align-items:center; justify-content:center; gap:9px;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.pill-status{ font-size:var(--fs-sub); font-weight:500; color:rgb(255 255 255 / .85); white-space:nowrap }
+.pill-dot{ width:5px; height:5px; border-radius:50%; background:rgb(255 255 255 / .3) }
+.pill-dot.ok{ background:var(--color-ok); animation:dotPulse 3s var(--ease-in-out) infinite }
+.pill-dot.err{ background:rgb(255 120 110) }
+@keyframes dotPulse{ 0%,100%{ opacity:.55 } 50%{ opacity:1 } }
+
+/* ── açık: panel ── */
+body.open .pill-ui{ opacity:0; pointer-events:none; transition:opacity var(--dur-micro) ease }
+body.open .panel-ui{
+  opacity:1; display:flex; flex-direction:row;
+  animation:panelIn var(--dur-slow) var(--ease-out);
+  transform-origin:top center;
+}
+/* cam kırılgan: overshoot yok, yalnız opacity + translate + hafif scale */
+@keyframes panelIn{
+  0%{ opacity:0; transform:translateY(12px) scale(.985) }
+  100%{ opacity:1; transform:translateY(0) scale(1) }
+}
+body:not(.open) .panel-ui{ display:none }
+
+/* ── iskelet: sidebar + main ── */
+.main{ position:relative; flex:1; min-width:0; display:flex; flex-direction:column }
+.sidebar{
+  flex:none; width:0; overflow:hidden;
+  display:flex; flex-direction:column;
+  border-right:1px solid transparent;
+  transition:width var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out);
+}
+body.history-open .sidebar{ width:220px; border-right-color:var(--rim) }
+
+/* ── BAŞLIK = KİMLİK SATIRI ──
+   Hamburger · avatar + ad + canlı durum · ayarlar/kapat. Ayrı bir araç çubuğu
+   yok: kimlik bir kez, en üstte durur. Sağdaki hairline camı böler. */
+.head{
+  flex:none; display:flex; align-items:center; gap:var(--sp-2);
+  padding:6px 12px 6px 10px; min-height:88px;
+  border-bottom:1px solid var(--rim-soft);
+}
+.head .spacer{ flex:1 }
+.ident{ position:relative; display:flex; align-items:center; min-width:0; flex:0 1 auto }
+
+.stage{ position:relative; flex:1; min-height:0; display:flex; flex-direction:column }
+
+/* ── HERO: avatarın evi + adı + canlı durumu (başlığın içinde) ──
+   Canlı avatar "boş" durumda sahne merkezine gider; o an başlıkta statik
+   marka görünür — kimlik hiç kaybolmaz. */
+.hero{
+  position:relative; flex:none;
+  height:auto;
+  display:flex; align-items:center; gap:var(--sp-3);
+  padding:0;
+}
+.avatar-slot{ width:var(--avatar-dock); height:var(--avatar-dock); flex:none }
+/* boş durumda canlı avatar sahnede: başlıkta 46px statik mark, slot'un üstünde */
+.mark-fallback{
+  display:none; position:absolute; left:0; top:50%;
+  width:46px; height:46px; transform:translateY(-50%);
+  pointer-events:none;
+}
+.mark-fallback svg{ display:block; width:46px; height:46px }
+body:not(.has-chat) .mark-fallback{ display:block }
+body:not(.has-chat) .hero .id{ opacity:1 }
+
+.hero .id{ display:flex; flex-direction:column; gap:2px; min-width:0; transition:opacity var(--dur-base) var(--ease-out) }
+.hero .id .name{
+  font-size:var(--fs-title); font-weight:700; color:var(--ink-hi);
+  letter-spacing:var(--ls-tight); line-height:1.15;
+}
+.hero .id .sub{
+  display:flex; align-items:center; gap:5px;
+  font-size:var(--fs-sub); color:var(--ink-mid);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px;
+}
+.hero .id .sub .sep{ color:var(--ink-low) }
+
+/* durum noktası: renk tek başına anlam taşımaz — yanında metin var */
+.dot{
+  width:5px; height:5px; flex:none; border-radius:50%;
+  background:var(--led-off); transition:background var(--dur-base) ease;
+}
+.dot.ok{ background:var(--color-ok) }
+.dot.err{ background:var(--color-error) }
+
+/* boş durumda ad: avatarın hemen üstünde, onunla birlikte gezer */
+/* boş durumda nefes: 5s sine, yalnız canlı avatarda (ortam katmanı) */
+body:not(.has-chat) #avatar{
+  animation:avatarBreath 5s var(--ease-in-out) infinite;
+  transform-origin:center;
+}
+@keyframes avatarBreath{
+  0%,100%{ transform:scale(1) }
+  50%{ transform:scale(1.04) }
+}
+
+.free-name{
+  position:absolute; left:0; top:0;
+  transform:translate3d(var(--x, -9999px), var(--y, 0), 0) translate(-50%, -100%);
+  font-size:var(--fs-title); font-weight:600; color:var(--ink-hi);
+  letter-spacing:-.01em; white-space:nowrap;
+  opacity:0; pointer-events:none;
+  transition:opacity var(--dur-base) var(--ease-out), transform var(--dur-slow) var(--ease-out);
+}
+.free-name.show{ opacity:1 }
+
+/* ── odak halkası: tek kural, her odaklanabilir öğe ── */
+:where(button, [role="button"], [role="switch"], [tabindex], select, a, textarea, input):focus{ outline:none }
+:where(button, [role="button"], [role="switch"], [tabindex], select, a, textarea, input):focus-visible{
+  outline:2px solid var(--focus-ring);
+  outline-offset:2px;
+}
+
+/* metin seçimi: aksan türevi (cam üstünde okunur kalır) */
+::selection{ background:var(--accent-dim); color:var(--ink-hi) }
+.composer input:focus, .composer input:focus-visible{ outline:none }
+
+/* ── erişilebilirlik: üç bağımsız sinyal (apple-design §14) ── */
+@media (prefers-reduced-motion:reduce){
+  *{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important }
+  .ambient i{ animation:none; opacity:.55 }
+}
+@media (prefers-reduced-transparency:reduce){
+  .window{ background-color:rgb(250 250 252 / .99) !important; -webkit-backdrop-filter:none; backdrop-filter:none }
+  body.closed .window{ background-color:rgb(8 9 14 / .99) !important }
+  .ambient{ display:none }
+  .sky{ display:none }
+  .glass{ background-color:transparent }
+}
+@media (prefers-contrast:more){
+  :root{ --ink-mid: rgb(28 30 38 / .86); --ink-low: rgb(28 30 38 / .74); --rim: rgb(28 30 38 / .2) }
+  .window{ background-color:rgb(250 250 252 / .96) }
+}

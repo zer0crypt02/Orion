@@ -1,0 +1,140 @@
+/* ── Orion token katmanı (v6 — "Aydınlık Vibrancy") ───────────────────
+   Tek gerçek kaynak. Bileşen CSS'inde ham renk / ham süre YOK.
+
+   YÖN (tasarım dokümanı 2026-11-15, kullanıcı onaylı):
+   duvar kağıdının üstünde buzlu cam — beyaza yakın yüzey, koyu yazı,
+   TEK mavi aksan. Gece gökyüzü / amber yönü terk edildi.
+
+   - Aksan (#3A6FF7): gönder düğmesi, seçili durum, kullanıcı balonu, link.
+   - Yeşil (#34C759): YALNIZ canlılık (nokta, toggle-on). Başka yerde yok.
+   - İkincil metin ≥ 4.5:1 kontrast: gray-on-gray yasak.
+   - Tipografi: SF Pro / system-ui — bilinçli seçim, webfont eklenmez.
+   - Süre paleti: 120 / 270 / 450. Overshoot yok (cam kırılgan malzeme).
+--------------------------------------------------------------------- */
+:root{
+  /* ── cam katmanları ── */
+  --glass: rgb(250 250 252 / .62);          /* panel gövdesi */
+  --glass-strong: rgb(250 250 252 / .82);   /* yoğun cam (ayarlar gövdesi) */
+  --glass-rail: rgb(255 255 255 / .35);     /* sol ray / sidebar */
+  --glass-card: rgb(255 255 255 / .76);     /* satır grubu, karo */
+  --glass-card-hi: rgb(255 255 255 / .86);  /* yükseltilmiş karo */
+  --glass-blur: blur(30px) saturate(180%);
+  --glass-shadow: 0 30px 60px rgb(0 0 0 / .35), 0 0 0 1px rgb(255 255 255 / .5);
+  --glass-shadow-sm: 0 1px 3px rgb(0 0 0 / .04);
+
+  /* pencere tabanı: cam, duvar kağıdını görünür bırakır */
+  --glass-tint: 250 250 252;
+  --glass-alpha: .62;
+  --glass-frost: 0;        /* ASCII zemin kalktı: ek tint katmanı yok */
+  --glass-rim: rgb(255 255 255 / .55);
+
+  /* zemin (devre dışı — duvar kağıdı görünür) */
+  --sky-blur: 0px;
+  --sky-saturate: 100%;
+  --sky-bleed: 0px;
+  --sky-opacity: 0;
+
+  /* ── mürekkep — cam üstü okunurluk merdiveni ── */
+  --ink-hi: rgb(28 30 38);            /* #1C1E26 — birincil */
+  --ink-mid: rgb(28 30 38 / .72);     /* ~5.5:1 */
+  --ink-low: rgb(28 30 38 / .60);     /* ~4.5:1 — daha aşağısı yasak */
+  --ink-inv: rgb(255 255 255);
+
+  /* ── tek aksan ── */
+  --accent: rgb(58 111 247);          /* #3A6FF7 */
+  --accent-strong: rgb(42 95 231);
+  --accent-dim: rgb(58 111 247 / .12);
+  --accent-fog: rgb(58 111 247 / .10);
+  --focus-ring: rgb(58 111 247 / .85);
+
+  /* ── canlılık / durum ── */
+  --color-ok: rgb(52 199 89);         /* yalnız nokta, toggle-on */
+  --color-error: rgb(192 57 43);      /* #C0392B */
+  --color-error-dim: rgb(192 57 43 / .14);
+  --color-warn: rgb(178 106 0);
+  --color-error-strong: rgb(164 44 32);
+  /* kategori kimlik renkleri (ray ikon kareleri) — yalnız burada */
+  --cat-conn: #3A6FF7;
+  --cat-models: #AF52DE;
+  --cat-tools: #FF9500;
+  --cat-memory: #34C759;
+  --led-off: rgb(28 30 38 / .28);
+  /* avatarın arkasındaki yumuşak hale (eski yıldız tonunun aksan karşılığı) */
+  --star-glow: rgb(58 111 247 / .10);
+  --star: var(--accent);
+
+  /* ── yüzeyler ── */
+  --surface-faint: rgb(255 255 255 / .55);
+  --surface-raise: rgb(255 255 255 / .72);
+  --surface-user: var(--accent);
+  --surface-sunken: rgb(28 30 38 / .04);
+  --surface-code: rgb(28 30 38 / .06);
+  --surface-settings: rgb(250 250 252 / .92);
+  --surface-option: rgb(255 255 255 / .96);
+  --surface-composer: rgb(255 255 255 / .82);
+
+  /* ── çizgiler ── */
+  --rim: rgb(28 30 38 / .09);
+  --rim-soft: rgb(28 30 38 / .06);
+  --rim-strong: rgb(28 30 38 / .16);
+  --rim-top: rgb(255 255 255 / .6);
+  --row-hover: rgb(28 30 38 / .045);
+  --row-press: rgb(28 30 38 / .08);
+  --row-selected: rgb(255 255 255 / .92);
+
+  --send-idle: rgb(28 30 38 / .12);
+  --mask-solid: rgb(0 0 0);
+
+  /* 4pt boşluk ölçeği */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 32px;
+
+  /* radius — panel 22 · satır grubu 12 · karo 14 · hap 999 */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 14px;
+  --r-xl: 22px;
+  --r-pill: 999px;
+
+  /* tipografi (ölçek ~1.3) */
+  --font: -apple-system, "SF Pro Text", "SF Pro", system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --fs-hero: 17px;      /* boş durum başlığı, panel başlığı */
+  --fs-title: 17px;
+  --fs-h3: 14.5px;      /* asistan alt başlıkları */
+  --fs-lede: 12px;
+  --fs-body: 13px;
+  --fs-ui: 13px;
+  --fs-sub: 11px;
+  --fs-micro: 10.5px;
+  --fs-label: 10.5px;   /* uppercase mikro etiket */
+  --lh-body: 1.5;
+  --ls-tight: -0.3px;   /* display başlık letter-spacing */
+  --ls-label: 0.8px;    /* uppercase etiket letter-spacing */
+
+  /* hareket — 120 / 270 / 450, imza easing */
+  --ease-out: cubic-bezier(.4, 0, .2, 1);
+  --ease-in: cubic-bezier(.4, 0, 1, 1);
+  --ease-in-out: cubic-bezier(.4, 0, .2, 1);
+  --dur-instant: 1ms;
+  --dur-micro: 120ms;
+  --dur-quick: 160ms;
+  --dur-base: 270ms;
+  --dur-slow: 450ms;
+
+  /* avatar geometrisi — sohbet modunda hero bandındaki ev */
+  --avatar-dock: 76px;
+  --avatar-empty: 96px;
+  --orb-fill: .9;
+  --ring-w: 1.75px;
+  --ring-1: rgb(178 196 240);
+  --ring-2: rgb(140 168 238);
+  --ring-3: rgb(58 111 247);
+  --ring-idle: rgb(28 30 38 / .12);
+  --orb-frost: rgb(255 255 255 / .5);
+}
