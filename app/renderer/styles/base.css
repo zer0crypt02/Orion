@@ -144,6 +144,9 @@ body.closed .window{
 body.open .pill-ui{ opacity:0; pointer-events:none; transition:opacity var(--dur-micro) ease }
 body.open .panel-ui{
   opacity:1; display:flex; flex-direction:row;
+  /* sağa hizalı: sidebar genişlerken ana kolon SAĞ kenara yapışık kalır
+     (merkezden büyüme sohbeti 110px sağa kaydırıyordu) */
+  justify-content:flex-end;
   animation:panelIn var(--dur-slow) var(--ease-out);
   transform-origin:top center;
 }
@@ -173,7 +176,7 @@ body.history-open .sidebar{ width:220px; border-right-color:var(--rim) }
   border-bottom:1px solid var(--rim-soft);
 }
 .head .spacer{ flex:1 }
-.ident{ position:relative; display:flex; align-items:center; min-width:0; flex:0 1 auto }
+.ident{ position:relative; display:flex; align-items:center; gap:var(--sp-2); min-width:0; flex:0 1 auto }
 
 .stage{ position:relative; flex:1; min-height:0; display:flex; flex-direction:column }
 
@@ -187,14 +190,16 @@ body.history-open .sidebar{ width:220px; border-right-color:var(--rim) }
   padding:0;
 }
 .avatar-slot{ width:var(--avatar-dock); height:var(--avatar-dock); flex:none }
-/* boş durumda canlı avatar sahnede: başlıkta 46px statik mark, slot'un üstünde */
+/* boş durumda canlı avatar sahnede: başlıkta 46px statik mark, akışta (slot boş) */
 .mark-fallback{
-  display:none; position:absolute; left:0; top:50%;
-  width:46px; height:46px; transform:translateY(-50%);
+  display:none; flex:none;
+  width:46px; height:46px;
   pointer-events:none;
 }
 .mark-fallback svg{ display:block; width:46px; height:46px }
 body:not(.has-chat) .mark-fallback{ display:block }
+/* boş durumda slot bir çukur bırakmasın: kimliği mark taşır */
+body:not(.has-chat) .avatar-slot{ display:none }
 body:not(.has-chat) .hero .id{ opacity:1 }
 
 .hero .id{ display:flex; flex-direction:column; gap:2px; min-width:0; transition:opacity var(--dur-base) var(--ease-out) }

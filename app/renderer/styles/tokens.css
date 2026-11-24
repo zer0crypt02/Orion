@@ -94,6 +94,11 @@
   --sp-6: 24px;
   --sp-7: 32px;
 
+  /* panel geometrisi — ana kolon 481 + sidebar 220 = açık panel 701.
+     Sidebar açılırken panel SOLA doğru büyür: sohbet kolonu ekranda oynamaz. */
+  --panel-w: 481px;
+  --sidebar-w: 220px;
+
   /* radius — panel 22 · satır grubu 12 · karo 14 · hap 999 */
   --r-sm: 8px;
   --r-md: 12px;
@@ -130,7 +135,7 @@
   /* avatar geometrisi — sohbet modunda hero bandındaki ev */
   --avatar-dock: 76px;
   --avatar-empty: 96px;
-  --orb-fill: .9;
+  --orb-fill: .75;   /* 96px taban × .75 = 72px: 76px slota 2px nefes payı */
   --ring-w: 1.75px;
   --ring-1: rgb(178 196 240);
   --ring-2: rgb(140 168 238);

@@ -30,7 +30,7 @@ const FREE_SCALE = 1.7;
 /* SABİT EV: karakter fare ile taşınmaz. Default konum her modda tek ve sabittir
    (sohbette hero bandı, boş durumda sahne merkezi). Mıknatıs/sürükleme kodu
    duruyor ama kapı kapalı — ileride açmak tek satır. */
-const PINNED = true;
+const PINNED = true;    /* sabit ev: serbest sürükleme kapalı, avatar hep slotta */
 /* scroll-to-dock penceresi: ~140px birikim / ~600ms (jest, dekoratif değil) */
 const WHEEL_PX = 140;
 const WHEEL_WINDOW = 600;
@@ -40,7 +40,9 @@ const LABEL_FREE = "Orion";   // free mod etkileşimsiz: kısa etiket, tab dış
 const PAD = 8;           // panel kenarından minimum boşluk
 const GAP = 10;          // composer ile avatar arası dikey boşluk
 const DRAG_THRESHOLD = 6; // px — tık ile sürüklemeyi ayırır
-const POS_KEY = "orion.avatarPos";
+/* v2: yeniden tasarımla ev (header) taşındı; v1'in kayıtlı koordinatları
+   mesaj alanını işgal ediyordu. Anahtar sürümlemesi eski kaydı bir kez reddeder. */
+const POS_KEY = "orion.avatarPos.v2";
 
 const SEARCH_RX = /(ara\b|aray|search|google|web|internet|\bbul\b|find\b|fiyat|price|weather|hava durum|haber|news)/i;
 const CODE_RX = /(kod|code|analiz|analy[sz]e|incele|review|debug|hata|error|fonksiyon|function|dosya|file|refaktör|refaktor|test et|\btest\b|derle|compile|çalışmıyor|calismiyor|not working|doesn.?t work)/i;
@@ -127,13 +129,18 @@ function clamp(p){
   const L = layerSize();
   const r = radius();
   if (L.w < r * 2 + PAD * 2) return p;      // panel henüz ölçülmedi
-  const b = stageBounds();
-  const minX = (b ? b.left : 0) + r + PAD;
-  const maxX = (b ? b.right : L.w) - r - PAD;
-  const minY = (b ? b.top : 0) + r + PAD;
-  const maxY = (b ? b.bottom : L.h) - r - PAD;
-  /* serbest hareket: dikeyde de serbest — yalnız sahne (composer üstü) sınırı var.
-     Metnin üstüne gelebilir; kullanıcı istediği yere koyar, mıknatıs eve çeker. */
+  /* EV KURALI (sohbet): ev başlık bandındaki .avatar-slot — sahnenin ÜSTÜNDE.
+     Sahne sınırına kırpmak karakteri sohbetin ilk balonunun üstüne indiriyordu
+     (minY = stage.top + r + PAD). Kırpma yalnız serbest konum için anlamlı;
+     sabit evde (custom yok) çapa olduğu gibi kullanılır. */
+  if (mode === "chat" && !custom) return p;
+  /* GEÇİCİ serbest taşıma: kırpma artık SAHNEYE değil tüm panele (avatar
+     katmanı = pencere) göre. Sahne sınırı karakteri başlık bandında tutuyordu;
+     kullanıcı ekranın üstüne kadar sürükleyebilsin. */
+  const minX = r + PAD;
+  const maxX = L.w - r - PAD;
+  const minY = r + PAD;
+  const maxY = L.h - r - PAD;
   return {
     x: Math.min(Math.max(p.x, minX), Math.max(minX, maxX)),
     y: Math.min(Math.max(p.y, minY), Math.max(minY, maxY)),

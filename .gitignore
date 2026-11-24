@@ -2,3 +2,13 @@ node_modules/
 .DS_Store
 *.log
 app/electron/fnwatcher
+
+# yerel çalışma notları: mockup'lar, oturum kayıtları (depoya girmez)
+.superpowers/
+
+# AGPL-3.0 bağımlılıktan üretilen bundle — depoda tutulmaz.
+# Kurulumdan sonra: npm run build:avatar
+app/renderer/vendor/avatar-web.bundle.js
+
+# yerel gateway kimlik jetonu (asla paylaşılmaz)
+gateway/.gateway-token

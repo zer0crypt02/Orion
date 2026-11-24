@@ -39,7 +39,13 @@ if (host) {
 
   if (api) {
     document.body.classList.add("has-sky");
-    const sync = () => api.setActive(document.body.classList.contains("open") && !document.hidden);
+    /* layout-busy: panel/sidebar geometri geçişi sürerken shader döngüsü durur
+       (yeniden raster + 30fps WebGL aynı karede çakışırsa geçiş kasıyordu) */
+    const sync = () => api.setActive(
+      document.body.classList.contains("open") &&
+      !document.body.classList.contains("layout-busy") &&
+      !document.hidden
+    );
     new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ["class"] });
     document.addEventListener("visibilitychange", sync);
     sync();

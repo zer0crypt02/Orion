@@ -1,0 +1,60 @@
+Copyright (c) 2026 Fatih Emre (zer0crypt02)
+Tüm hakları saklıdır. / All rights reserved.
+
+────────────────────────────────────────────────────────────────────────
+TÜRKÇE
+────────────────────────────────────────────────────────────────────────
+
+Bu depo ve içindeki tüm kaynak kod, tasarım dosyaları, görseller, metinler
+ve diğer içerikler telif hakkı sahibine aittir. Depo, yalnızca görüntüleme
+ve proje hakkında bilgi edinme amacıyla herkese açık olarak yayımlanmıştır.
+
+Aşağıdaki eylemler, telif hakkı sahibinden ÖNCEDEN YAZILI İZİN ALINMADAN
+YASAKTIR:
+
+  1. Kodu veya içeriğin herhangi bir bölümünü kopyalamak, çoğaltmak,
+     indirip saklamak ya da başka bir yerde yayımlamak,
+  2. Kodu değiştirmek, uyarlamak, çevirmek veya türev çalışma üretmek,
+  3. Kodu ya da türevlerini dağıtmak, satmak, kiralamak, alt lisanslamak
+     veya herhangi bir ürün/hizmetin parçası olarak kullanmak,
+  4. Ticari veya ticari olmayan amaçlarla çalıştırmak, barındırmak ya da
+     başkalarına sunmak.
+
+İzin talepleri için depo sahibiyle iletişime geçin:
+GitHub: @zer0crypt02
+
+Bu depo, GitHub platformunun genel kullanım koşulları kapsamında
+görüntülenebilir ve platformun sağladığı teknik özellikler (ör. çatallama)
+GitHub'ın kendi koşullarına tabidir. Bu lisans, üçüncü taraf bileşenlerin
+kendi lisanslarını değiştirmez; ilgili bildirimler LICENSE-NOTICE.md ve
+app/LICENSE-NOTICE.md dosyalarındadır.
+
+────────────────────────────────────────────────────────────────────────
+ENGLISH
+────────────────────────────────────────────────────────────────────────
+
+This repository and all of its source code, design files, images, text and
+other content are the property of the copyright holder. It is published
+publicly for viewing and informational purposes only.
+
+The following are PROHIBITED without the PRIOR WRITTEN PERMISSION of the
+copyright holder:
+
+  1. Copying, reproducing, downloading for storage, or republishing the
+     code or any part of the content;
+  2. Modifying, adapting, translating, or creating derivative works;
+  3. Distributing, selling, renting, sublicensing, or incorporating the
+     code or derivatives into any product or service;
+  4. Running, hosting, or making it available to others for commercial or
+     non-commercial purposes.
+
+To request permission, contact the repository owner:
+GitHub: @zer0crypt02
+
+Access through the GitHub platform remains subject to GitHub's own terms.
+This license does not alter the licenses of third-party components; see
+LICENSE-NOTICE.md and app/LICENSE-NOTICE.md for those notices.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.

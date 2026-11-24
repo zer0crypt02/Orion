@@ -68,6 +68,14 @@ function centerX(w) {
   const { workArea } = screen.getPrimaryDisplay();
   return { x: Math.round(workArea.x + workArea.width / 2 - w / 2), y: workArea.y - TOP_BLEED };
 }
+/* sağa sabit büyüme: panelin SAĞ kenarı ekranda sabit kalır, sidebar açılırken
+   genişlik SOLA doğru artar. Merkezden büyüme sohbet kolonunu 110px kaydırıp
+   sidebar animasyonuyla çakışıyordu (kasmanın ilk yarısı). */
+function anchoredX(w) {
+  const { workArea } = screen.getPrimaryDisplay();
+  const right = Math.round(workArea.x + workArea.width / 2 + PANEL.w / 2);
+  return { x: right - w, y: workArea.y - TOP_BLEED };
+}
 function sendToPanel(channel, data) {
   try { if (panelWin && !panelWin.isDestroyed()) panelWin.webContents.send(channel, data); } catch {}
 }
@@ -246,7 +254,7 @@ function setPanel(open, reason) {
   if (open) {
     // panel gerçek boyutunda tek seferlik konumlanır (geometri animasyonu yok) + swap
     const target = historyOpen ? WIDE : PANEL;
-    const pos = centerX(target.w);
+    const pos = anchoredX(target.w);
     try { panelWin.setBounds({ x: pos.x, y: pos.y, width: target.w, height: target.h }); } catch {}
     try { panelWin.setOpacity(0); } catch {}
     try { pillWin.hide(); } catch {}
@@ -277,8 +285,9 @@ ipcMain.handle("sidebar:set", (_e, open) => {
   historyOpen = !!open;
   if (isOpen && panelWin) {
     // tek seferlik setBounds — geometri animasyonu yok, kritik değil
+    // sağ kenar sabit: sohbet kolonu ekranda yerinde kalır, alan sola açılır
     const target = historyOpen ? WIDE : PANEL;
-    const pos = centerX(target.w);
+    const pos = anchoredX(target.w);
     try { panelWin.setBounds({ x: pos.x, y: pos.y, width: target.w, height: target.h }); } catch {}
   }
   return { ok: true, historyOpen };

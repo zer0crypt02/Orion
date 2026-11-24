@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Blob — göz takibi prototipi</title>
+<style>
+  :root{ --eye:#101014; }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    display:grid;
+    place-items:center;
+    background:
+      radial-gradient(120% 90% at 50% 0%, #17171c 0%, #0b0b0d 55%, #08080a 100%);
+    font-family:-apple-system, "Inter Tight", "Inter", system-ui, sans-serif;
+    color:#8a8a96;
+    overflow:hidden;
+    cursor:none;
+  }
+
+  .stage{
+    position:relative;
+    width:min(76vw, 400px);
+    aspect-ratio:1/1;
+    display:grid;
+    place-items:center;
+  }
+  .stage::after{               /* maske altındaki ışık havuzu */
+    content:"";
+    position:absolute;
+    width:58%;
+    height:9%;
+    bottom:19%;
+    border-radius:50%;
+    background:radial-gradient(closest-side, rgba(255,255,255,.14), rgba(255,255,255,0) 70%);
+    filter:blur(7px);
+  }
+
+  .mascot{
+    width:100%; height:100%;
+    overflow:visible;
+    transform-origin:50% 62%;
+    animation:breathe 5.6s ease-in-out infinite;
+    will-change:transform;
+  }
+  @keyframes breathe{
+    0%,100%{ transform:scale(1) translateY(0) }
+    50%    { transform:scale(1.02) translateY(-5px) }
+  }
+
+  .body{
+    fill:url(#mascotFill);
+    filter:drop-shadow(0 20px 34px rgba(0,0,0,.6));
+  }
+  .gloss{ fill:#fff; opacity:.75 }
+
+  .eye{
+    fill:var(--eye);
+    transform-box:fill-box;
+    transform-origin:center;
+    transition:transform .1s cubic-bezier(.4,0,.2,1);
+  }
+  .eyes, .gaze{ will-change:transform }
+  .gaze{ transition:transform .4s cubic-bezier(.19,1,.22,1) }
+
+  .hint{
+    position:fixed; bottom:22px; left:0; right:0;
+    text-align:center; font-size:12.5px; letter-spacing:.02em;
+    color:#6b6b78; user-select:none;
+  }
+  .hint b{ color:#a9a9b6; font-weight:500 }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <svg class="mascot" viewBox="0 0 200 140" aria-label="Maskot">
+    <defs>
+      <!-- userSpaceOnUse: parçalar tek gradyanı paylaşır, ek yerleri görünmez -->
+      <radialGradient id="mascotFill" gradientUnits="userSpaceOnUse"
+                      cx="82" cy="40" r="130">
+        <stop offset="0%"   stop-color="#ffffff"/>
+        <stop offset="58%"  stop-color="#f8f8fc"/>
+        <stop offset="100%" stop-color="#e7e7f0"/>
+      </radialGradient>
+    </defs>
+
+    <!--
+      Silüet: iki tümsekli bulut. Tek parça path yerine örtüşen
+      ilkeller kullanılıyor — böylece tümseklerin kavisi elle
+      yazılmıyor, dairelerden geliyor.
+    -->
+    <g class="body">
+      <rect  x="33"  y="63" width="134" height="54" rx="27"/>   <!-- gövde -->
+      <circle cx="75"  cy="64" r="30"/>                          <!-- sol tümsek -->
+      <circle cx="127" cy="68" r="26"/>                          <!-- sağ tümsek -->
+      <circle cx="40"  cy="112" r="7"/>                          <!-- alt flare -->
+      <circle cx="160" cy="112" r="7"/>
+    </g>
+
+    <ellipse class="gloss" cx="70" cy="52" rx="24" ry="9"
+             transform="rotate(-20 70 52)"/>
+
+    <g class="gaze" id="gaze">
+      <g class="eyes" id="eyes">
+        <rect class="eye" id="eyeL" x="90"  y="83" width="10" height="24" rx="5"/>
+        <rect class="eye" id="eyeR" x="107" y="83" width="10" height="24" rx="5"/>
+      </g>
+    </g>
+  </svg>
+</div>
+
+<div class="hint">İmleci gezdir — <b>gözler takip eder</b>. Kırpma kendiliğinden.</div>
+
+<script>
+(() => {
+  const gaze  = document.getElementById('gaze');
+  const eyes  = document.getElementById('eyes');
+  const eyeL  = document.getElementById('eyeL');
+  const eyeR  = document.getElementById('eyeR');
+  const stage = document.querySelector('.stage');
+
+  const MAX_X = 8, MAX_Y = 5.5;   // yuvanın sınırı (SVG birimi)
+  const LERP  = 0.14;             // yumuşatma; 1 = anında zıplama
+  const cur = { x: 0, y: 0 }, target = { x: 0, y: 0 };
+
+  function aim(clientX, clientY){
+    const r  = stage.getBoundingClientRect();
+    const cx = r.left + r.width  * .5;
+    const cy = r.top  + r.height * .5;
+    const nx = (clientX - cx) / (r.width  * .5);
+    const ny = (clientY - cy) / (r.height * .5);
+    target.x = Math.max(-1, Math.min(1, nx)) * MAX_X;
+    target.y = Math.max(-1, Math.min(1, ny)) * MAX_Y;
+  }
+
+  addEventListener('pointermove', e => aim(e.clientX, e.clientY), {passive:true});
+  addEventListener('pointerleave', () => { target.x = 0; target.y = 0; });
+
+  // Pencere odaklı değilken kendi kendine etrafa bakar
+  let ticks = 0;
+  setInterval(() => {
+    if (document.hasFocus()) return;
+    if (++ticks % 44 === 0) {
+      target.x = (Math.random() * 2 - 1) * MAX_X * .5;
+      target.y = (Math.random() * 2 - 1) * MAX_Y * .5;
+    }
+  }, 50);
+
+  (function frame(){
+    cur.x += (target.x - cur.x) * LERP;
+    cur.y += (target.y - cur.y) * LERP;
+    eyes.setAttribute('transform', `translate(${cur.x.toFixed(2)} ${cur.y.toFixed(2)})`);
+    gaze.setAttribute('transform', `rotate(${(cur.x * .2).toFixed(2)} 100 96)`);
+    requestAnimationFrame(frame);
+  })();
+
+  let timer;
+  function blink(){
+    const shut = () => { eyeL.style.transform = eyeR.style.transform = 'scaleY(.1)'; };
+    const open = () => { eyeL.style.transform = eyeR.style.transform = 'scaleY(1)'; };
+    shut(); setTimeout(open, 92);
+    if (Math.random() < .25) setTimeout(() => { shut(); setTimeout(open, 84); }, 190);
+    timer = setTimeout(blink, 2400 + Math.random() * 3600);
+  }
+  timer = setTimeout(blink, 1600);
+
+  document.addEventListener('visibilitychange', () => {
+    clearTimeout(timer);
+    if (!document.hidden) timer = setTimeout(blink, 800);
+  });
+})();
+</script>
+</body>
+</html>

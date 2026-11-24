@@ -253,7 +253,7 @@ body.has-chat .empty{ display:none }
   transform:translate3d(var(--x, 0px), var(--y, 0px), 0) scale(1);
   --hero-ease:var(--ease-out);
   transition:transform var(--dur-slow) var(--hero-ease, var(--ease-out));
-  /* sabit ev: karakter fare ile taşınmaz (Default konum = hero bandı) */
+  /* sabit ev: karakter fare ile taşınmaz (serbest sürükleme kapalı) */
   pointer-events:none; cursor:default;
   will-change:transform;
   outline:none;

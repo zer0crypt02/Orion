@@ -1,56 +1,50 @@
-# LICENSE-NOTICE — AGPL kararı ve kaynak dağıtım planı
+# LICENSE-NOTICE — lisans ve üçüncü taraf bildirimleri
 
-Tarih: 25 Ekim 2026
-Kapsam: **kişisel kullanım** (notch-assistant, `notch/app`)
+Son güncelleme: 2026-11-24
+Kapsam: `notch/app` (Orion)
 
-## Karar
+## 1. Bu deponun lisansı
+
+Orion'un özgün kodu, tasarımı ve içeriği **tüm hakları saklı** (all rights reserved)
+statüsündedir. Depo yalnızca görüntüleme amacıyla herkese açıktır; kopyalama, değiştirme,
+türetme ve yeniden dağıtma önceden yazılı izin gerektirir. Tam metin: depo kökündeki `LICENSE`.
+
+## 2. Üçüncü taraf bağımlılık: `@bible-strong/avatar-web`
 
 `@bible-strong/avatar-web@0.1.0` (ve bağımlılığı `@bible-strong/avatar-core@0.1.0`)
-**AGPL-3.0-only** lisanslıdır. Bu proje AGPL-3.0 altında kullanım **kabul edilmiştir**;
-dolayısıyla:
+**AGPL-3.0-only** lisanslıdır. Bu projede değiştirilmeden, npm üzerinden bağımlılık
+olarak kullanılır. Lisanstan doğan yükümlülükler:
 
-- Proje lisansı `AGPL-3.0-only` olarak ilan edildi (`package.json` → `license`).
-- Paketler npm'den asıl kaynaklarıyla kuruldu; repo kodu/asset'leri elle kopyalanmadı.
-- Jarvis maskotu, logosu ve ikonları **kopyalanmadı** — maskot, Bible Strong
-  prosedürel avatar şemasıyla **özgün** yazılmış `renderer/assets/orion.avatar.json`
-  tanımıdır (isim: `orion-notch-blob`).
-
-## Telif ve lisans bildirimleri
-
+- Paket, npm'den kendi kaynağıyla kurulur; AGPL kodu bu depoya kopyalanmaz.
+- `renderer/vendor/avatar-web.bundle.js`, `npm run build:avatar` ile
+  `node_modules/@bible-strong/avatar-web/dist/index.js` kaynağından yerel olarak üretilir.
+  **Bu bundle depoda tutulmaz** (`.gitignore`); dolayısıyla depo, AGPL bileşenin
+  derlenmiş halini yeniden dağıtmaz.
+- Bundle'ı üreten taraf, aynı kaynaktan (`npm install` + `npm run build:avatar`)
+  birebir aynı çıktıyı üretebilir.
 - Paket lisans metinleri kurulumla birlikte korunur:
   `node_modules/@bible-strong/avatar-web/LICENSE`
-  `node_modules/@bible-strong/avatar-core/LICENSE` (npm bağımlılığı)
+  `node_modules/@bible-strong/avatar-core/LICENSE`
 - Üçüncü taraf bildirimleri: `node_modules/@bible-strong/avatar-core/THIRD_PARTY_NOTICES.md`
-  (openclaw kurulumundan) — dağıtım sırasında kopyalanır.
-- Bu dosya (LICENSE-NOTICE.md) depoda tutulur ve AGPL §4-§7 gerekliliklerini belgeler.
 
-## Değişikliklerin belgelenmesi
+Proje, AGPL bileşenle birlikte **dağıtılan bir bütün** olarak sunulmaz; depoda yalnızca
+özgün kaynak bulunur. Uygulama bir ağ hizmeti olarak sunulmadığı için AGPL §13
+yükümlülüğü doğmaz.
 
-Avatar paketinde **kod değişikliği yapılmadı**. Renderer'da kullanım şekli:
+## 3. Özgünlük
 
-- `renderer/vendor/avatar-web.bundle.js` — `npm run build:avatar` ile
-  `node_modules/@bible-strong/avatar-web/dist/index.js` kaynağından esbuild
-  ile paketlenir (ajv CJS bağımlılığı tarayıcıda çalışsın diye). Kaynak kodu
-  değiştirilmez; yalnızca derlenir.
-- `renderer/assets/orion.avatar.json` — bizim özgün avatar tanımımız
-  (paketin şemasını kullanır, paket kodunu içermez).
+Jarvis maskotu, logosu ve ikonları **kopyalanmadı**. Maskot, Bible Strong prosedürel
+avatar şemasıyla **özgün** yazılmış `renderer/assets/orion.avatar.json` tanımıdır
+(isim: `orion-notch-blob`).
 
-## Kaynak dağıtım planı (AGPL §6 uyumu)
+## 4. React Bits portları
 
-Uygulama üçüncü kişilere dağıtılırsa:
+`renderer/vendor/gooey-nav.js` ve `renderer/vendor/gradient-ascii.js`, React Bits
+bileşenlerinin React'siz vanilla portlarıdır. Kaynak bileşen ve uyarlama bilgisi her
+dosyanın başlığında belirtilmiştir.
 
-1. **Kaynak teklifi:** Uygulamanın tamamının AGPL-3.0 lisansıyla kaynak kodu
-   paylaşılır (bu depo + `package.json` + `build:avatar` scripti yeterlidir;
-   bundle yeniden üretilebilir).
-2. **Bundle eşdeğerliliği:** `renderer/vendor/avatar-web.bundle.js` dağıtımında
-   yanına "kaynağı npm'den `@bible-strong/avatar-web@0.1.0` + `npm run build:avatar`"
-   notu eklenir; alıcı birebir aynı bundle'ı üretebilmelidir.
-3. **Bildirimler:** Yukarıdaki LICENSE ve THIRD_PARTY_NOTICES dosyaları
-   dağıtım paketine `licenses/` altında kopyalanır.
-4. **Etkileşim:** Uygulama uzaktan ağ hizmeti olarak sunulmazsa (masaüstü
-   uygulama — sunulmaz), AGPL §13 ağ etkileşimi yükümlülüğü doğmaz.
+## 5. Kapsam dışı
 
-## Kapsam dışı
-
-- `notch/gateway/` (openclaw) ayrı bir bileşendir; kendi lisansına tabidir.
-- `notch/prototype/` içindeki HTML prototipleri bu karara dahil değildir.
+- `notch/gateway/` ayrı bir bileşendir; kendi lisansına tabidir.
+- `notch/prototype/` içindeki HTML prototipleri bu bildirime dahil değildir.
+- `notch/.superpowers/` yerel çalışma notlarıdır ve depoya dahil edilmez.

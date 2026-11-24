@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Orion — avatar renk varyantları</title>
+<!--
+  GEÇİCİ PROTOTİP (tasarım kararı için). Uygulamaya dahil değildir.
+  Amaç: orion.avatar.json içindeki yalnızca `colors.body` / `colors.eyes`
+  değiştiğinde karakterin nasıl okunduğunu yan yana görmek.
+  Servis: project kökünden `python3 -m http.server` (göreli yollar için).
+-->
+<style>
+  :root{
+    /* DESIGN.md §4 — önerilen gece gökyüzü paleti */
+    --bg:#0E1026;
+    --card:#1A1C34;
+    --card-edge:rgb(255 255 255 / .08);
+    --ink-hi:#F4F1FC;
+    --ink-mid:#BEBAD4;
+    --ink-low:#84809E;
+    --accent:#FFCE8F;
+    --ring-1:#1B2A6B;
+    --ring-2:#3B5BA9;
+    --ring-3:#9FB6FF;
+  }
+  *{box-sizing:border-box;margin:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(60% 45% at 22% 0%, rgb(59 91 169 / .22), transparent 70%),
+      radial-gradient(55% 45% at 82% 12%, rgb(120 96 200 / .16), transparent 70%),
+      radial-gradient(35% 30% at 50% 46%, rgb(255 206 143 / .06), transparent 70%),
+      var(--bg);
+    color:var(--ink-mid);
+    font-family:-apple-system, "SF Pro Text", system-ui, sans-serif;
+    display:flex;flex-direction:column;min-height:100%;
+    padding:28px 24px 20px;
+  }
+  header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+  h1{font-size:19px;font-weight:600;color:var(--ink-hi);letter-spacing:-.01em}
+  header span{font-size:12.5px;color:var(--ink-low)}
+  .grid{
+    display:grid;gap:16px;
+    grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+    align-items:start;
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--card-edge);
+    border-radius:18px;
+    padding:22px 16px 16px;
+    display:flex;flex-direction:column;align-items:center;gap:14px;
+    position:relative;overflow:hidden;
+  }
+  .card::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(70% 50% at 50% 0%, rgb(255 255 255 / .05), transparent 70%);
+  }
+  .stage{position:relative;width:160px;height:160px;display:grid;place-items:center}
+  .ring{
+    position:absolute;inset:0;border-radius:50%;
+    background:conic-gradient(from 0deg,
+      var(--ring-1) 0%, var(--ring-2) 30%, var(--ring-3) 55%,
+      var(--ring-2) 80%, var(--ring-1) 100%);
+    -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 1.5px));
+    mask:radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 1.5px));
+    animation:spin 9s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .disc{
+    position:absolute;inset:1px;border-radius:50%;
+    background:rgb(226 222 255 / .06);
+    -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  }
+  .host{position:relative;width:160px;height:160px;display:grid;place-items:center}
+  .host canvas{display:block;width:160px;height:160px;border-radius:50%}
+  .meta{text-align:center;display:flex;flex-direction:column;gap:3px}
+  .meta b{font-size:13px;font-weight:600;color:var(--ink-hi)}
+  .meta code{font:11px ui-monospace, Menlo, monospace;color:var(--ink-low);letter-spacing:.02em}
+  .badge{
+    position:absolute;top:10px;left:12px;
+    font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--accent);border:1px solid rgb(255 206 143 / .3);
+    border-radius:999px;padding:2px 7px;background:rgb(255 206 143 / .08);
+  }
+  .bar{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    margin-top:24px;padding-top:16px;border-top:1px solid var(--card-edge);
+  }
+  .bar span{font-size:12px;color:var(--ink-low);margin-right:6px}
+  button{
+    font:inherit;font-size:12.5px;padding:7px 13px;border-radius:999px;cursor:pointer;
+    color:var(--ink-hi);background:rgb(255 255 255 / .06);
+    border:1px solid var(--card-edge);
+    transition:background .16s ease, border-color .16s ease;
+  }
+  button:hover{background:rgb(255 255 255 / .1)}
+  button.on{border-color:rgb(255 206 143 / .55);background:rgb(255 206 143 / .12);color:var(--accent)}
+  .note{margin-top:14px;font-size:12px;line-height:1.6;color:var(--ink-low);max-width:70ch}
+  .err{margin-top:14px;font-size:12.5px;color:#FF8A7A;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<header>
+  <h1>Orion — avatar renk varyantları</h1>
+  <span>şekil sabit · yalnızca <code>colors.body</code> / <code>colors.eyes</code> değişiyor</span>
+</header>
+
+<main class="grid" id="grid"></main>
+
+<div class="bar" id="bar">
+  <span>animasyon:</span>
+</div>
+
+<p class="note">
+  Hepsi aynı <code>orion.avatar.json</code> tanımı ve aynı 23 animasyon. Amaç gri
+  gövdenin neden "benlik" taşımadığını ve hangi rengin lacivert zeminde karakter
+  olarak okunduğunu görmek. Karar A/B/C'den biri + "bugünkü" referans.
+</p>
+<div class="err" id="err"></div>
+
+<script type="module">
+import { createAvatar } from "../app/renderer/vendor/avatar-web.bundle.js";
+
+const VARIANTS = [
+  { key: "A", name: "A · Ay taşı", body: "#8e9bf0", eyes: "#12101f", rec: true },
+  { key: "B", name: "B · Gece",    body: "#2b2a52", eyes: "#ffe7c7" },
+  { key: "C", name: "C · Süt",     body: "#e7e5f5", eyes: "#241f3d" },
+  { key: "—", name: "Bugün (gri)", body: "#c9cbcf", eyes: "#111316" },
+];
+
+const ANIMS = ["idle", "listening", "thinking", "happy", "curious", "celebrate"];
+
+const grid = document.getElementById("grid");
+const bar = document.getElementById("bar");
+const errBox = document.getElementById("err");
+const ctrls = [];
+
+function fail(e){
+  errBox.textContent = "Prototip yüklenemedi: " + (e?.message || e);
+  console.error(e);
+}
+
+try {
+  const base = await (await fetch("../app/renderer/assets/orion.avatar.json")).json();
+
+  for (const v of VARIANTS){
+    const card = document.createElement("article");
+    card.className = "card";
+    if (v.rec){
+      const b = document.createElement("span");
+      b.className = "badge";
+      b.textContent = "önerilen";
+      card.appendChild(b);
+    }
+    const stage = document.createElement("div");
+    stage.className = "stage";
+    stage.innerHTML = '<div class="ring"></div><div class="disc"></div>';
+    const host = document.createElement("div");
+    host.className = "host";
+    stage.appendChild(host);
+    card.appendChild(stage);
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    const nm = document.createElement("b"); nm.textContent = v.name;
+    const hex = document.createElement("code");
+    hex.textContent = "body " + v.body + " · eyes " + v.eyes;
+    meta.append(nm, hex);
+    card.appendChild(meta);
+    grid.appendChild(card);
+
+    const def = structuredClone(base);
+    def.name = "orion-notch-blob";
+    def.colors = { body: v.body, eyes: v.eyes };
+
+    try {
+      const ctl = createAvatar(host, {
+        definition: def,
+        defaultAnimation: "idle",
+        autoplay: true,
+        size: "160px",
+        ariaLabel: v.name,
+      });
+      ctrls.push({ ctl, host });
+    } catch (e) {
+      // tek varyant patlarsa diğerleri yine görünsün
+      const msg = document.createElement("code");
+      msg.textContent = "yüklenemedi: " + (e?.message || e);
+      msg.style.color = "#FF8A7A";
+      msg.style.fontSize = "11px";
+      meta.appendChild(msg);
+      console.error(v.name, e);
+    }
+  }
+
+  for (const a of ANIMS){
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = a;
+    if (a === "idle") b.classList.add("on");
+    b.addEventListener("click", () => {
+      bar.querySelectorAll("button").forEach((x) => x.classList.remove("on"));
+      b.classList.add("on");
+      for (const { ctl } of ctrls){ try { ctl.play(a); } catch (e) { console.warn(a, e); } }
+    });
+    bar.appendChild(b);
+  }
+
+  document.documentElement.dataset.ready = "1";
+} catch (e) {
+  fail(e);
+}
+</script>
+</body>
+</html>
